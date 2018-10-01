@@ -120,27 +120,6 @@ plotSAMstyle <- function(df){
 }
 
 #-------------------------------------------------------------------------
-get_bias_df <- function(difficulty){
-  bias_df <- list(Source = character(),
-                  Value = integer())
-
-  if (difficulty == "Easy"){
-    nbiases <- 1
-  } else if (difficulty == "Moderate"){
-    nbiases <- sample(1:3, 1)
-  } else if (difficulty == "Hard"){
-    nbiases <- sample(2:5, 1)
-  } else if (difficulty == "Wicked Hard"){
-    nbiases <- sample(3:6, 1)
-  } else {
-    return("problem with difficulty switch")
-  }
-  Source = sample(c("Year", "Age", "Cohort"), nbiases)
-  
-  return(bias_df)
-}
-
-#-------------------------------------------------------------------------
 # Define UI using tabs for different topics
 ui <- navbarPage("Recognizing Random Residuals",
    
@@ -212,14 +191,14 @@ ui <- navbarPage("Recognizing Random Residuals",
       sidebarPanel(
         sliderInput("nyears",
                     label = "Number of Years",
-                    min = 1,
+                    min = 6,
                     max = 50,
                     step = 1,
                     value = 15),
         
         sliderInput("nages",
                     label = "Number of Ages",
-                    min = 1,
+                    min = 4,
                     max = 20,
                     step = 1,
                     value = 8),
@@ -326,14 +305,14 @@ server <- function(input, output) {
       if (input$demoBiasDir == "Negative") biasamount <- 1 / biasamount
     }
     
-    additivebias0 <- data.frame(Year = rep(seq(demostartyear, demoendyear), each = demonages),
-                               Age = rep(seq(1, demonages), demonyears),
-                               bias = 0) %>%
-      mutate(Cohort = Year - Age)
-    multiplicativebias1 <- data.frame(Year = rep(seq(demostartyear, demoendyear), each = demonages),
-                                     Age = rep(seq(1, demonages), demonyears),
-                                     bias = 1) %>%
-      mutate(Cohort = Year - Age)
+    bias0 <- expand.grid(Age = 1:demonages, Year = demostartyear:demoendyear) %>%
+      mutate(Cohort = Year - Age) 
+    
+    additivebias0 <- bias0 %>%
+      mutate(bias = 0)
+    multiplicativebias1 <- bias0 %>%
+      mutate(bias = 1)
+
     additivebias <- additivebias0
     multiplicativebias <- multiplicativebias1
     
@@ -403,6 +382,9 @@ server <- function(input, output) {
   
   })
   
+  #################################################################################
+  #################################################################################
+  #################################################################################
   # generate a case for evaluation
   caseList <- eventReactive(input$createCase, {
     icount$icase <- icount$icase + 1
@@ -414,20 +396,183 @@ server <- function(input, output) {
     nvals <- input$nyears * input$nages
     endyear <- 2018
     startyear <- endyear - input$nyears + 1
-    rand_df <- expand.grid(Year = startyear:endyear, Age = 1:input$nages) %>%
+    rand_df <- expand.grid(Age = 1:input$nages, Year = startyear:endyear) %>%
       mutate(Cohort = Year - Age,
              randresid = rnorm(nvals))
     mylist$resid_df <- as.data.frame(rand_df)
     
     # determine whether to apply bias or not
-    #applybias <- sample(c(TRUE, FALSE), 1)
-    applybias <- FALSE
+    applybias <- sample(c(TRUE, FALSE), 1)
     mylist$Actual <- ifelse(applybias == TRUE, "Biased", "Random")
     
     # residuals with bias
     mylist$resid_df$biased <- mylist$resid_df$randresid
     if (applybias == TRUE){ 
-      mylist$bias_df <- get_bias_df(input$difficulty)
+      if (input$difficulty == "Easy"){
+        nbiases <- 1
+        biasType <- "Additive"
+        biasAmount <- "High"
+      } else if (input$difficulty == "Moderate"){
+        nbiases <- sample(1:2, 1)
+        biasType <- rep("Additive", nbiases)
+        biasAmount <- sample(c("High", "Medium"), nbiases, replace = TRUE)
+      } else if (input$difficulty == "Hard"){
+        nbiases <- sample(2:3, 1)
+        biasType <- sample(c("Additive", "Multiplicative"), nbiases, replace = TRUE)
+        biasAmount <- sample(c("Medium", "Low"), nbiases, replace = TRUE)
+      } else if (input$difficulty == "Wicked Hard"){
+        nbiases <- sample(3:4, 1)
+        biasType <- sample(c("Additive", "Multiplicative"), nbiases, replace = TRUE)
+        biasAmount <- rep("Low", nbiases)
+      } else {
+        return("problem with difficulty switch")
+      }
+      Source <- rep(NA, nbiases)
+      SourceValue <- rep(NA, nbiases)
+      biasvalue <- rep(NA, nbiases)
+      nbiasyear <- 0
+      nbiasage <- 0
+      nbiascohort <- 0
+      for (ibias in 1:nbiases){
+        Source[ibias] <- sample(c("Year", "Age", "Cohort"), 1)
+        if (Source[ibias] == "Year") nbiasyear <- nbiasyear + 1
+        if (Source[ibias] == "Age") nbiasage <- nbiasage + 1
+        if (Source[ibias] == "Cohort") nbiascohort <- nbiascohort + 1
+      }
+      # Year biases
+      biasyears <- sample(seq(startyear, endyear), nbiasyear, replace = FALSE)
+      biasages <- sample(seq(1, input$nages), nbiasage, replace = FALSE)
+      biascohorts <- sample(seq(startyear - 3, endyear - 3), nbiascohort, replace = FALSE)
+
+      biasdirection <- sample(c("Positive", "Negative"), nbiases, replace = TRUE)
+      
+      icounty <- 0
+      icounta <- 0
+      icountc <- 0
+      for (ibias in 1:nbiases){
+        if (Source[ibias] == "Year"){
+          icounty <- icounty + 1
+          SourceValue[ibias] <- biasyears[icounty]
+          if (biasType[ibias] == "Additive"){
+            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$add$High
+            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$add$Medium
+            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$add$Low
+            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
+          }
+          if (biasType[ibias] == "Multiplicative"){
+            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$mult$High
+            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$mult$Medium
+            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$mult$Low
+            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
+          }
+        }
+        if (Source[ibias] == "Age"){
+          icounta <- icounta + 1
+          SourceValue[ibias] <- biasages[icounta]
+          if (biasType[ibias] == "Additive"){
+            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$add$High
+            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$add$Medium
+            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$add$Low
+            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
+          }
+          if (biasType[ibias] == "Multiplicative"){
+            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$mult$High
+            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$mult$Medium
+            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$mult$Low
+            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
+          }
+        }
+        if (Source[ibias] == "Cohort"){
+          icountc <- icountc + 1
+          SourceValue[ibias] <- biascohorts[icountc]
+        }
+        if (biasType[ibias] == "Additive"){
+          if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$add$High
+          if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$add$Medium
+          if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$add$Low
+          if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
+        }
+        if (biasType[ibias] == "Multiplicative"){
+          if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$mult$High
+          if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$mult$Medium
+          if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$mult$Low
+          if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
+        }
+      }
+      bias_df <- data.frame(Count = 1:nbiases,
+                            Source = Source,
+                            SourceValue = SourceValue,
+                            Type = biasType,
+                            Amount = biasAmount,
+                            Direction = biasdirection,
+                            BiasValue = biasvalue)
+      
+      mylist$bias_df <- bias_df
+      
+      # bias containers
+      bias0 <- expand.grid(Age = 1:input$nages, Year = startyear:endyear) %>%
+        mutate(Cohort = Year - Age) 
+      
+      additivebias0 <- bias0 %>%
+        mutate(bias = 0)
+      multiplicativebias1 <- bias0 %>%
+        mutate(bias = 1)
+      
+      additivebias <- additivebias0
+      multiplicativebias <- multiplicativebias1
+      
+      for (ibias in 1:nbiases){
+        # Year bias
+        if (bias_df$Source[ibias] == "Year"){
+          if (bias_df$Type[ibias] == "Additive"){
+            thisadditivebias <- additivebias0 %>%
+              mutate(bias = ifelse(Year == bias_df$SourceValue[ibias], 
+                                   bias + bias_df$BiasValue[ibias], bias))
+            additivebias$bias <- additivebias$bias + thisadditivebias$bias
+          }
+          if (bias_df$Type[ibias] == "Multiplicative"){
+            thismultiplicativebias <- multiplicativebias1 %>%
+              mutate(bias = ifelse(Year == bias_df$SourceValue[ibias], 
+                                   bias * bias_df$BiasValue[ibias], bias))
+            multiplicativebias$bias <- multiplicativebias$bias * thismultiplicativebias$bias
+          }
+        }
+        
+        # Age bias
+        if (bias_df$Source[ibias] == "Age"){
+          if (bias_df$Type[ibias] == "Additive"){
+            thisadditivebias <- additivebias0 %>%
+              mutate(bias = ifelse(Age == bias_df$SourceValue[ibias], 
+                                   bias + bias_df$BiasValue[ibias], bias))
+            additivebias$bias <- additivebias$bias + thisadditivebias$bias
+          }
+          if (bias_df$Type[ibias] == "Multiplicative"){
+            thismultiplicativebias <- multiplicativebias1 %>%
+              mutate(bias = ifelse(Age == bias_df$SourceValue[ibias], 
+                                   bias * bias_df$BiasValue[ibias], bias))
+            multiplicativebias$bias <- multiplicativebias$bias * thismultiplicativebias$bias
+          }
+        }
+        
+        # Cohort bias
+        if (bias_df$Source[ibias] == "Cohort"){
+          if (bias_df$Type[ibias] == "Additive"){
+            thisadditivebias <- additivebias0 %>%
+              mutate(bias = ifelse(Cohort == bias_df$SourceValue[ibias], 
+                                   bias + bias_df$BiasValue[ibias], bias))
+            additivebias$bias <- additivebias$bias + thisadditivebias$bias
+          }
+          if (bias_df$Type[ibias] == "Multiplicative"){
+            thismultiplicativebias <- multiplicativebias1 %>%
+              mutate(bias = ifelse(Cohort == bias_df$SourceValue[ibias], 
+                                   bias * bias_df$BiasValue[ibias], bias))
+            multiplicativebias$bias <- multiplicativebias$bias * thismultiplicativebias$bias
+          }
+        }
+      }      
+      
+      # apply the bias
+      mylist$resid_df$biased <- mylist$resid_df$randresid * multiplicativebias$bias + additivebias$bias
     }
 
     # residuals to plot
@@ -442,7 +587,7 @@ server <- function(input, output) {
       mysd <- sd(mylist$resid_df$plotresid)
       mylist$resid_df$plotresid <- (mylist$resid_df$plotresid - mymean) / mysd
     }
-#    print(mylist)
+    print(mylist$bias_df)
     mylist
   })
   
