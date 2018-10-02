@@ -174,11 +174,7 @@ ui <- navbarPage("Recognizing Random Residuals",
                      label = "Direction of bias?",
                      choices = list("Positive", "Negative"),
                      selected = "Positive",
-                     inline = TRUE),
-        
-        checkboxInput("DemoBiasRescale",
-                      label = "Rescale residuals?",
-                      value = FALSE)
+                     inline = TRUE)
       ),
       mainPanel(
         plotOutput("demoBiasPlot")
@@ -372,12 +368,6 @@ server <- function(input, output) {
              plotresid = randresid)
     if(mylist$biased == TRUE) mylist$resid_df$plotresid <- mylist$resid_df$biasresid
     
-    # rescale
-    if (input$DemoBiasRescale == TRUE){
-      mymean <- round(mean(mylist$resid_df$plotresid), 2)
-      mysd <- round(sd(mylist$resid_df$plotresid), 2)
-      mylist$resid_df$plotresid <- (mylist$resid_df$plotresid - mymean) / mysd
-    }
     mylist
   
   })
@@ -579,15 +569,6 @@ server <- function(input, output) {
     if (applybias == TRUE) mylist$resid_df$plotresid <- mylist$resid_df$biased
     if (applybias == FALSE) mylist$resid_df$plotresid <- mylist$resid_df$randresid
 
-    # rescale
-    applyrescale <- sample(c(TRUE, FALSE), 1)
-    mylist$Rescale <- applyrescale
-    if (applyrescale == TRUE){
-      mymean <- mean(mylist$resid_df$plotresid)
-      mysd <- sd(mylist$resid_df$plotresid)
-      mylist$resid_df$plotresid <- (mylist$resid_df$plotresid - mymean) / mysd
-    }
-    print(mylist$bias_df)
     mylist
   })
   
