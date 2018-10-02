@@ -8,7 +8,8 @@
 #
 
 packages = c("shiny",       # interactive components
-             "dplyr")       # data wrangling
+             "dplyr",       # data wrangling
+             "ggplot2")     # nice plotting
 
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
@@ -211,8 +212,7 @@ ui <- navbarPage("Recognizing Random Residuals",
         
       ),
       mainPanel(
-        plotOutput("demoPlot"),
-        dataTableOutput("randomTable")
+        plotOutput("demoPlot")
       )
     )
   ),
@@ -245,7 +245,7 @@ ui <- navbarPage("Recognizing Random Residuals",
         downloadButton("downloadResults", "Download")
         ),
       mainPanel(
-        #plotOutput("resultsOverTimePlot"),
+        plotOutput("resultsOverTimePlot"),
         #plotOutput("resultsCrossTablePlot"),
         dataTableOutput("resultsTable")
       )
@@ -588,10 +588,10 @@ server <- function(input, output) {
     #   stop("need error trap for no guess")
     # }
     thisresult_df <- data.frame(Case = icount$icase,
-                                Difficult = input$difficulty,
+                                Difficulty = input$difficulty,
                                 Actual = caseList()$Actual,
                                 Response = responseList()$Response,
-                                Correct = responseList()$Correct)
+                                Correct = responseList()$Correct) 
     if (input$submit == 1){
       values$results_df <- thisresult_df
     }else{
@@ -673,8 +673,29 @@ server <- function(input, output) {
     ifelse (caseList()$Actual == responseList()$Response, "Correct!", "Sorry, wrong response")
   })
   
-  output$randomTable <- renderDataTable(caseList()$plotresids_df)
-  
+  output$resultsOverTimePlot <- renderPlot({
+    if (is.null(values$results_df)){
+      return(NULL)
+    }
+    results_plot_df <- values$results_df %>%
+      mutate(cdf = cumsum(Correct)) %>%
+      mutate(percCorrect = 100 * cdf / Case) %>%
+      mutate(lowerCI = 100 * qbinom(0.025, Case, 0.5) / Case) %>%
+      mutate(upperCI = 100 * qbinom(0.975, Case, 0.5) / Case)
+    if (length(results_plot_df$Case) < 5){
+      plot(1:10,1:10,type='n',axes=FALSE,xlab="",ylab="")
+        text(5,5,"Need at least 5 responses to plot time series")
+    }else{
+      ggplot(results_plot_df, aes(x=Case, y=percCorrect)) +
+        geom_point() +
+        geom_line() +
+        geom_ribbon(aes(ymin=lowerCI, ymax=upperCI), fill = "red", alpha = 0.5) +
+        xlab("Number of Responses") +
+        ylab("Percent Correct") +
+        expand_limits(y=c(0, 100)) +
+        theme_bw()
+    }
+  })
   output$resultsTable <- renderDataTable(values$results_df)
    
 
