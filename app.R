@@ -234,6 +234,9 @@ ui <- navbarPage("Recognizing Random Residuals",
       ),
       mainPanel(
         textOutput("correctText"),
+        br(),
+        br(),
+        tableOutput("biasesTable"),
         plotOutput("testingPlot", height = "600px")
       )
     )
@@ -671,6 +674,13 @@ server <- function(input, output) {
     if (clickvalues$respond == 0) return(NULL)
     
     ifelse (caseList()$Actual == responseList()$Response, "Correct!", "Sorry, wrong response")
+  })
+  
+  output$biasesTable <- renderTable({
+    if (is.null(caseList()$bias_df) | clickvalues$respond == 0){
+      return(NULL)
+    }
+    caseList()$bias_df
   })
   
   output$resultsOverTimePlot <- renderPlot({
