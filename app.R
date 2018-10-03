@@ -243,15 +243,8 @@ ui <- navbarPage("Recognizing Random Residuals",
   ),
   
   tabPanel("Results so far",
-    sidebarLayout(
-      sidebarPanel(
-        downloadButton("downloadResults", "Download")
-        ),
-      mainPanel(
-        plotOutput("resultsOverTimePlot"),
-        dataTableOutput("resultsTable")
-      )
-    )
+           plotOutput("resultsOverTimePlot"),
+           dataTableOutput("resultsTable")
   )
   
 ) # close navbarPage parens
@@ -687,20 +680,6 @@ server <- function(input, output) {
   })
   output$resultsTable <- renderDataTable(values$results_df)
    
-
-  ## download buttons ##
-  # note: if Run App in RStudio window, the filename will not default correctly (known RStudio bug),
-  # but if Run App in External browser then filename will show up correctly however it will be
-  # downloaded to directory C:\Users\your.name\AppData\Local\Temp
-  output$downloadResults <- downloadHandler(
-    filename = function() {
-      paste0("R3_",Sys.Date(),".csv")
-    },
-    content = function(file) {
-      write.csv(values$results_df, file, row.names = FALSE)
-    }
-  )
-  
 }
 
 # Run the application 
