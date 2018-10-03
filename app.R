@@ -668,6 +668,8 @@ server <- function(input, output) {
       mutate(percCorrect = 100 * cdf / Case) %>%
       mutate(lowerCI = 100 * qbinom(0.025, Case, 0.5) / Case) %>%
       mutate(upperCI = 100 * qbinom(0.975, Case, 0.5) / Case)
+    d_ends <- results_plot_df %>%
+      filter(Case == max(Case))
     if (length(results_plot_df$Case) < 5){
       plot(1:10,1:10,type='n',axes=FALSE,xlab="",ylab="")
         text(5,5,"Need at least 5 responses to plot time series")
@@ -679,6 +681,8 @@ server <- function(input, output) {
         xlab("Number of Responses") +
         ylab("Percent Correct") +
         expand_limits(y=c(0, 100)) +
+        scale_y_continuous(sec.axis = sec_axis(~ ., breaks = round(d_ends$percCorrect, 1))) +
+        scale_x_continuous(expand = c(0,0)) +
         theme_bw()
     }
   })
