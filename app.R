@@ -162,7 +162,7 @@ ui <- navbarPage("Recognizing Random Residuals",
         
         checkboxGroupInput("demoBiases",
                            label = "Which biases to show?",
-                           choices = list("Year", "Age", "Cohort"),
+                           choices = list("Year 2014", "Age 3", "Cohort 2006"),
                            selected = NULL),
         
         radioButtons("demoBiasType",
@@ -249,7 +249,6 @@ ui <- navbarPage("Recognizing Random Residuals",
         ),
       mainPanel(
         plotOutput("resultsOverTimePlot"),
-        #plotOutput("resultsCrossTablePlot"),
         dataTableOutput("resultsTable")
       )
     )
@@ -315,7 +314,7 @@ server <- function(input, output) {
     multiplicativebias <- multiplicativebias1
     
     # Checkbox group Year selected
-    if (any(input$demoBiases == "Year")){
+    if (any(input$demoBiases == "Year 2014")){
       mylist$biased <- TRUE
       if (input$demoBiasType == "Additive"){
         thisadditivebias <- additivebias0 %>%
@@ -330,7 +329,7 @@ server <- function(input, output) {
     }
     
     # Checkbox group Age selected
-    if (any(input$demoBiases == "Age")){
+    if (any(input$demoBiases == "Age 3")){
       mylist$biased <- TRUE
       if (input$demoBiasType == "Additive"){
         thisadditivebias <- additivebias0 %>%
@@ -345,7 +344,7 @@ server <- function(input, output) {
     }
     
     # Checkbox group Cohort selected
-    if (any(input$demoBiases == "Cohort")){
+    if (any(input$demoBiases == "Cohort 2006")){
       mylist$biased <- TRUE
       if (input$demoBiasType == "Additive"){
         thisadditivebias <- additivebias0 %>%
