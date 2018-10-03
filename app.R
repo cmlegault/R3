@@ -24,9 +24,9 @@ demo_resids_df <- data.frame(Year = rep(seq(1969, 2018), each = 20),
                              randresid = rnorm(50 * 20))
 
 # settings for biases
-bias <- list()
-bias$add <- list(High = 4, Medium = 3, Low = 2)
-bias$mult <- list(High = 3, Medium = 2.5, Low = 2)
+bias <- data.frame(Type = c(rep("Additive", 3), rep("Multiplicative", 3)),
+                   Amount = rep(c("High", "Medium", "Low"), 2),
+                   Value = c(4, 3, 2, 3, 2.5, 2))
 
 #-------------------------------------------------------------------------
 # plotting (and other) functions go here
@@ -290,17 +290,16 @@ server <- function(input, output) {
     
     mylist$biased <- FALSE
     
+    biasamount <- bias %>%
+      filter(Type == input$demoBiasType, Amount == input$demoBiasAmount) %>%
+      select(Value) %>%
+      as.numeric()
+    
     if (input$demoBiasType == "Additive"){
-      if (input$demoBiasAmount == "High") biasamount <- bias$add$High
-      if (input$demoBiasAmount == "Medium") biasamount <- bias$add$Medium
-      if (input$demoBiasAmount == "Low") biasamount <- bias$add$Low
       if (input$demoBiasDir == "Negative") biasamount <- -1 * biasamount
     }
     
     if (input$demoBiasType == "Multiplicative"){
-      if (input$demoBiasAmount == "High") biasamount <- bias$mult$High
-      if (input$demoBiasAmount == "Medium") biasamount <- bias$mult$Medium
-      if (input$demoBiasAmount == "Low") biasamount <- bias$mult$Low
       if (input$demoBiasDir == "Negative") biasamount <- 1 / biasamount
     }
     
@@ -443,53 +442,28 @@ server <- function(input, output) {
       icounta <- 0
       icountc <- 0
       for (ibias in 1:nbiases){
+        biasvalue[ibias] <- bias %>%
+          filter(Type == biasType[ibias], Amount == biasAmount[ibias]) %>%
+          select(Value) %>%
+          as.numeric()
+        
+        if (biasType[ibias] == "Additive"){
+          if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
+        }
+        if (biasType[ibias] == "Multiplicative"){
+          if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
+        }
         if (Source[ibias] == "Year"){
           icounty <- icounty + 1
           SourceValue[ibias] <- biasyears[icounty]
-          if (biasType[ibias] == "Additive"){
-            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$add$High
-            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$add$Medium
-            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$add$Low
-            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
-          }
-          if (biasType[ibias] == "Multiplicative"){
-            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$mult$High
-            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$mult$Medium
-            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$mult$Low
-            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
-          }
         }
         if (Source[ibias] == "Age"){
           icounta <- icounta + 1
           SourceValue[ibias] <- biasages[icounta]
-          if (biasType[ibias] == "Additive"){
-            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$add$High
-            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$add$Medium
-            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$add$Low
-            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
-          }
-          if (biasType[ibias] == "Multiplicative"){
-            if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$mult$High
-            if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$mult$Medium
-            if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$mult$Low
-            if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
-          }
         }
         if (Source[ibias] == "Cohort"){
           icountc <- icountc + 1
           SourceValue[ibias] <- biascohorts[icountc]
-        }
-        if (biasType[ibias] == "Additive"){
-          if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$add$High
-          if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$add$Medium
-          if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$add$Low
-          if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- -1 * biasvalue[ibias]
-        }
-        if (biasType[ibias] == "Multiplicative"){
-          if (biasAmount[ibias] == "High") biasvalue[ibias] <- bias$mult$High
-          if (biasAmount[ibias] == "Medium") biasvalue[ibias] <- bias$mult$Medium
-          if (biasAmount[ibias] == "Low") biasvalue[ibias] <- bias$mult$Low
-          if (biasdirection[ibias] == "Negative") biasvalue[ibias] <- 1 / biasvalue[ibias]
         }
       }
       bias_df <- data.frame(Count = 1:nbiases,
