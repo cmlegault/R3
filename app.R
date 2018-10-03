@@ -26,7 +26,7 @@ demo_resids_df <- data.frame(Year = rep(seq(1969, 2018), each = 20),
 # settings for biases
 bias <- data.frame(Type = c(rep("Additive", 3), rep("Multiplicative", 3)),
                    Amount = rep(c("High", "Medium", "Low"), 2),
-                   Value = c(4, 3, 2, 3, 2.5, 2))
+                   Value = c(4, 2, 1, 3, 2, 1.5))
 
 #-------------------------------------------------------------------------
 # plotting (and other) functions go here
@@ -399,23 +399,25 @@ server <- function(input, output) {
     
     # residuals with bias
     mylist$resid_df$biased <- mylist$resid_df$randresid
-    if (applybias == TRUE){ 
+    if (applybias == TRUE){
+      dirflag <- TRUE
       if (input$difficulty == "Easy"){
         nbiases <- 1
         biasType <- "Additive"
         biasAmount <- "High"
       } else if (input$difficulty == "Moderate"){
-        nbiases <- sample(1:2, 1)
+        nbiases <- sample(3:4, 1)
         biasType <- rep("Additive", nbiases)
         biasAmount <- sample(c("High", "Medium"), nbiases, replace = TRUE)
       } else if (input$difficulty == "Hard"){
-        nbiases <- sample(2:3, 1)
-        biasType <- sample(c("Additive", "Multiplicative"), nbiases, replace = TRUE)
-        biasAmount <- sample(c("Medium", "Low"), nbiases, replace = TRUE)
-      } else if (input$difficulty == "Wicked Hard"){
-        nbiases <- sample(3:4, 1)
+        nbiases <- sample(1:3, 1)
         biasType <- sample(c("Additive", "Multiplicative"), nbiases, replace = TRUE)
         biasAmount <- rep("Low", nbiases)
+      } else if (input$difficulty == "Wicked Hard"){
+        nbiases <- 2
+        biasType <- rep("Multiplicative", nbiases)
+        biasAmount <- rep("Low", nbiases)
+        dirflag <- FALSE
       } else {
         return("problem with difficulty switch")
       }
@@ -431,12 +433,12 @@ server <- function(input, output) {
         if (Source[ibias] == "Age") nbiasage <- nbiasage + 1
         if (Source[ibias] == "Cohort") nbiascohort <- nbiascohort + 1
       }
-      # Year biases
+      # which years, ages, or cohororts are biased
       biasyears <- sample(seq(startyear, endyear), nbiasyear, replace = FALSE)
       biasages <- sample(seq(1, input$nages), nbiasage, replace = FALSE)
       biascohorts <- sample(seq(startyear - 3, endyear - 3), nbiascohort, replace = FALSE)
 
-      biasdirection <- sample(c("Positive", "Negative"), nbiases, replace = TRUE)
+      biasdirection <- sample(c("Positive", "Negative"), nbiases, replace = dirflag)
       
       icounty <- 0
       icounta <- 0
