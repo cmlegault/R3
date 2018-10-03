@@ -131,18 +131,22 @@ ui <- navbarPage("Recognizing Random Residuals",
           column(12,
                  h2("Welcome"),
                  br(),
-                 p("This is the welcome text..."),
+                 p("Think you can recognize when residuals are random versus biases? Here's a game to let you see how good you really are. Start with the Demo tab to see how the different biases look. Use the Settings tab to create a situation like you are accustomed to seeing in your or someone else's assessment. The Random or Not? tab is the fun part. A plot is provided and you guess whether the residuals are random or biased with immediate feedback. The Results so far tab lets you see how you are doing. Can you do better than random? If so, bump up the difficulty a notch and try again."),
                  br(),
                  p("Have fun!")
                  )
         )
       ),
       mainPanel(
-        h3("A title"),
-        p("Some text..."),
-        br(),
-        h3("Another title, if needed"),
-        p("Some more text...")
+        h3("Demo"),
+        p("In this tab, a set of residuals is created randomly from a normal distribution with mean zero and standard deviation one. This is the desired property of residuals in age composition plots. There are currently two types of plots available, ASAP and SAM. You can then add bias as a Year, Age, or Cohort effect. The 2006 Cohort is age 0 in 2006, age 1 in 2007, age 2 in 2008, etc. The higher the bias, the easier is it to see the effect of adding or multiplying the random values by the bias. The bias can be either positive or negative. In this demonstration, mixing of additive and multiplicative with positive and negative biases is not allowed, but it can occur in the test plots."),
+        h3("Settings"),
+        p("This is where you determine how the test plots will appear and how challenging it will be to detect the biases. The sliders allow you to change the number of years and ages to mimic situations that you encounter in your assessment. There are only two plot types available currently, ASAP and SAM, because the r4ss and BAM plots require the observed and expected values, not just a matrix of residuals. This will be developed in the future. Feedback is welcome on the difficulty settings. Is Easy too easy, or Hard too hard? The plot on this page shows an example of the settings selected with no bias."),
+        h3("Random or Not?"),
+        p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see the plot disappear and be replace by a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). Just click the Create Test Case again to get your next test plot."),
+        p(" Please note there are some known issues with this page due to my relative newness with Shiny. Specifically, if you click either button multiple times, it will advance the counter and create problems for the percent correct calculations. If you are feeling bad about how you are doing, you can simply click the submit my response button numerous times on a correct reponse to inflate your percent correct. <grin>"),
+        h3("Results so far"),
+        p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The table below can be sorted by any of the columns by clicking on the up or down arrow to the right of the column header.")
       )
     )
   ),
@@ -227,7 +231,7 @@ ui <- navbarPage("Recognizing Random Residuals",
         radioButtons("Response",
                     label = "Your response",
                     choices = list("Random", "Biased"),
-                    selected = character(0),
+                    selected = "Random",
                     inline = TRUE),
         actionButton("submit",
                      label = "Submit my response")
@@ -544,9 +548,6 @@ server <- function(input, output) {
   })
   
   responseList <- eventReactive(input$submit,{
-    if (is.null(input$Response)){
-      stop("need error trap for no guess")
-    }
     response.list <- list()
     response.list$icase <- icount$icase
     response.list$Response <- input$Response
