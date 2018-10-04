@@ -131,7 +131,7 @@ ui <- navbarPage("Recognizing Random Residuals",
           column(12,
                  h2("Welcome"),
                  br(),
-                 p("Think you can recognize when residuals are random versus biases? Here's a game to let you see how good you really are. Start with the Demo tab to see how the different biases look. Use the Settings tab to create a situation like you are accustomed to seeing in your or someone else's assessment. The Random or Not? tab is the fun part. A plot is provided and you guess whether the residuals are random or biased with immediate feedback. The Results so far tab lets you see how you are doing. Can you do better than random? If so, bump up the difficulty a notch and try again."),
+                 p("Think you can recognize when residuals are random versus biases? Here's a game to let you see how good you really are. Start with the 'Demo' tab to see how the different biases look. Use the 'Settings' tab to create a situation like you are accustomed to seeing in your or someone else's assessment. The 'Random or Not?' tab is the fun part. A plot is provided and you guess whether the residuals are random or biased with immediate feedback. The 'Results so far' tab lets you see how you are doing. Can you do better than random? If so, bump up the difficulty a notch and try again."),
                  br(),
                  p("Have fun!")
                  )
@@ -148,7 +148,10 @@ ui <- navbarPage("Recognizing Random Residuals",
         h3("Results so far"),
         p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The table below can be sorted by any of the columns by clicking on the up or down arrow to the right of the column header."),
         h3("Technical Details"),
-        p("add in details about biases and difficulty settings here")
+        p("The additive biases just add or subtract the Value in the table below to the random residuals in that year, age, or cohort. The multiplicative biases multiply the residuals by the Value when the direction is positive and multiply the residuals by (1/Value) when the direction is negative (meaning the size of the residuals decrease)."),
+        tableOutput("biasTable"),
+        p("Cohort biases can be applied at age zero in years startyear - 3 to endyear - 3. Age and Year biases can be applied in any of the years or ages. Any given year, age, or cohort cannot have multiple biases applied, meaning there cannot be a case when year 2014 has both an additive and multiplicative bias. However, intersections of a year, age, or cohort can have multiple biases applied as seen in the 'Demo' tab."),
+        p("The difficulty settings change the number of biases possible, the amount of bias, and the type of bias. When the difficulty setting is Easy, there is only one additive bias applied and it has a high amount of bias. The Moderate setting has either 3 or 4 additive biases applied with either medium or low amounts of bias. The Hard setting has from 1 to 3 biases applied that can be either additive or multiplicative with low amount of bias. The Easy, Moderate, and Hard settings have the direction of each bias applied randomly (meaning both positive and negative or all positive or all negative directions can occur). The Wicked Hard setting applies two multiplicative biases, one positive and one negative, with low amounts of bias.")
       )
     )
   ),
@@ -407,7 +410,7 @@ server <- function(input, output) {
       } else if (input$difficulty == "Moderate"){
         nbiases <- sample(3:4, 1)
         biasType <- rep("Additive", nbiases)
-        biasAmount <- sample(c("High", "Medium"), nbiases, replace = TRUE)
+        biasAmount <- sample(c("Medium", "Low"), nbiases, replace = TRUE)
       } else if (input$difficulty == "Hard"){
         nbiases <- sample(1:3, 1)
         biasType <- sample(c("Additive", "Multiplicative"), nbiases, replace = TRUE)
@@ -678,6 +681,10 @@ server <- function(input, output) {
       return(NULL)
     }
     caseList()$bias_df
+  })
+  
+  output$biasTable <- renderTable({
+    bias
   })
   
   output$resultsOverTimePlot <- renderPlot({
