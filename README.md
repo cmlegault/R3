@@ -1,4 +1,4 @@
 # R3
 Recognizing Random Residuals
 
-This is a work in progress. Trying to set up game to see how well people can identify random vs biased residuals in age composition bubble plots.
+Think you can identify random vs biased residuals in age composition bubble plots? Try this Shiny app game to see.
