@@ -161,7 +161,7 @@ ui <- navbarPage("Recognizing Random Residuals",
       sidebarPanel(
         selectInput("demoPlotType",
                     label = "Plot Type",
-                    choices = list("ASAP", "r4ss", "BAM", "SAM", "other?"),
+                    choices = list("ASAP", "r4ss", "BAM", "SAM"),
                     selected = "ASAP"),
         
         selectInput("demoBiasAmount",
@@ -211,7 +211,7 @@ ui <- navbarPage("Recognizing Random Residuals",
         
         selectInput("plottype",
                     label = "Plot Type)",
-                    choices = list("ASAP", "r4ss", "BAM", "SAM", "other?"),
+                    choices = list("ASAP", "SAM"),
                     selected = "ASAP"),
         
         selectInput("difficulty",
@@ -590,10 +590,6 @@ server <- function(input, output) {
     if (input$demoPlotType == "SAM"){
       plotSAMstyle(demoList()$resid_df)
     }
-    if (input$demoPlotType == "other?"){
-      plot(1:100,1:100, type = 'n', axes = FALSE)
-      text(50,50,"need to define other") 
-    }
   })
   
   output$demoPlot <- renderPlot({
@@ -613,10 +609,6 @@ server <- function(input, output) {
     }
     if (input$plottype == "SAM"){
       plotSAMstyle(demo_df)
-    }
-    if (input$plottype == "other?"){
-      plot(1:100,1:100, type = 'n', axes = FALSE)
-      text(50,50,"need to define other") 
     }
   })
   
