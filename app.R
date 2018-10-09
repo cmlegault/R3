@@ -122,9 +122,10 @@ plotSAMstyle <- function(df){
 
 #-------------------------------------------------------------------------
 # Define UI using tabs for different topics
-ui <- navbarPage("Recognizing Random Residuals",
-  # can use following line instead of above one to get NEFSC branding below tabpanels, would prefer it above tabpanels 
-  # navbarPage("Recognizing Random Residuals, header = img(src="noaanefsclogo.png"), 
+ui <- navbarPage(strong("Recognizing Random Residuals"), 
+                 header = img(src="noaanefsclogo.png"), 
+                 windowTitle = "R3",
+                 
   tabPanel("Introduction",
     sidebarLayout(
       sidebarPanel(
