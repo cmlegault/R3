@@ -187,7 +187,8 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         p("Cohort biases can be applied at age zero in years startyear - 3 to endyear - 3. Age and Year biases can be applied in any of the years or ages. Any given year, age, or cohort cannot have multiple biases applied, meaning there cannot be a case when year 2014 has both an additive and multiplicative bias. However, intersections of a year, age, or cohort can have multiple biases applied as seen in the 'Demo' tab."),
         p("The difficulty settings change the number of biases possible, the amount of bias, and the type of bias. When the difficulty setting is Easy, there is only one additive bias applied and it has a high amount of bias. The Moderate setting has either 3 or 4 additive biases applied with either medium or low amounts of bias. The Hard setting has from 1 to 3 biases applied that can be either additive or multiplicative with low amount of bias. The Easy, Moderate, and Hard settings have the direction of each bias applied randomly (meaning both positive and negative or all positive or all negative directions can occur). The Wicked Hard setting applies two multiplicative biases, one positive and one negative, with low amounts of bias."),
         p("Code for this R Shiny app is available at ",
-        a("https://github.com/cmlegault/R3", href="https://github.com/cmlegault/R3", target="_blank"))
+        a("https://github.com/cmlegault/R3", href="https://github.com/cmlegault/R3", target="_blank")),
+        p("Special thanks to Diane Rielinger, Dan Hennen, and Jon Deroba for providing feedback on earlier versions of this game.")
       )
     )
   ),
