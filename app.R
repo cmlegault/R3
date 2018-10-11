@@ -133,7 +133,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
           column(12,
                  h2("Welcome"),
                  br(),
-                 p("Think you can recognize when residuals are random versus biases? Here's a game to let you see how good you really are. Start with the 'Demo' tab to see how the different biases look. Use the 'Settings' tab to create a situation like you are accustomed to seeing in your or someone else's assessment. The 'Random or Not?' tab is the fun part. A plot is provided and you guess whether the residuals are random or biased with immediate feedback. The 'Results so far' tab lets you see how you are doing. Can you do better than random? If so, bump up the difficulty a notch and try again."),
+                 p("Think you can recognize when residuals are random versus biased? Here's a game to let you see how good you really are. Start with the 'Demo' tab to see how the different biases look. Use the 'Settings' tab to create a situation like you are accustomed to seeing in your or someone else's assessment. The 'Random or Not?' tab is the fun part. A plot is provided and you guess whether the residuals are random or biased with immediate feedback. The 'Results so far' tab lets you see how you are doing. Can you do better than random? If so, bump up the difficulty a notch and try again."),
                  br(),
                  p("Have fun!")
                  )
