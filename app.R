@@ -9,6 +9,7 @@
 
 packages = c("shiny",       # interactive components
              "dplyr",       # data wrangling
+             "tidyr",       # data wrangling
              "ggplot2")     # nice plotting
 
 package.check <- lapply(packages, FUN = function(x) {
@@ -148,7 +149,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see the plot disappear and be replace by a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). A smaller version of the test plot is shown at the bottom of the page (you may have to scroll down to see it) so you can see where biases were or were not present. Just click the Create Test Case again to get your next test plot."),
         p(" Please note there are some known issues with this page due to my relative newness with Shiny. Specifically, if you click either button multiple times, it will advance the counter and create problems for the percent correct calculations. If you are feeling bad about how you are doing, you can simply click the submit my response button numerous times on a correct reponse to inflate your percent correct. <grin>"),
         h3("Results so far"),
-        p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The table below can be sorted by any of the columns by clicking on the up or down arrow to the right of the column header."),
+        p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The first table compiles your correct and incorrect responses according to the level of difficulty and whether the test plot was random or biased. The next table contains the response-specific results and can be sorted by any of the columns by clicking on the up or down arrow to the right of the column header."),
         h3("Technical Details"),
         p("The additive biases just add or subtract the Value in the table below to the random residuals in that year, age, or cohort. The multiplicative biases multiply the residuals by the Value when the direction is positive and multiply the residuals by (1/Value) when the direction is negative (meaning the size of the residuals decrease)."),
         tableOutput("biasTable"),
@@ -258,6 +259,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
   
   tabPanel("Results so far",
            plotOutput("resultsOverTimePlot"),
+           tableOutput("crossTable"),
            dataTableOutput("resultsTable")
   )
   
@@ -710,6 +712,17 @@ server <- function(input, output) {
         theme_bw()
     }
   })
+  
+  output$crossTable <- renderTable({
+    values$results_df %>%
+      group_by(Difficulty, Actual, Response) %>%
+      summarize(n = n()) %>%
+      spread(key = Response, value = n, fill = 0) %>%
+      mutate(PercentCorrect = ifelse(Actual == "Biased", 
+                                     100 * Biased / (Biased + Random), 
+                                     100 * Random / (Biased + Random))) 
+  })
+  
   output$resultsTable <- renderDataTable(values$results_df)
    
 }
