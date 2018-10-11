@@ -714,6 +714,9 @@ server <- function(input, output) {
   })
   
   output$crossTable <- renderTable({
+    if (is.null(values$results_df)){
+      return(NULL)
+    }
     values$results_df %>%
       group_by(Difficulty, Actual, Response) %>%
       summarize(n = n()) %>%
