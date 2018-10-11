@@ -32,7 +32,7 @@ bias <- data.frame(Type = c(rep("Additive", 3), rep("Multiplicative", 3)),
 #-------------------------------------------------------------------------
 # plotting (and other) functions go here
 # df is a data frame with at least columns Year, Age, plotresid, can have other columns
-plotASAPstyle <- function(df){
+plotASAPstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
   years <- sort(unique(df$Year))
   nyrs <- length(years)
   ages <- sort(unique(df$Age))
@@ -73,22 +73,37 @@ plotASAPstyle <- function(df){
   title (my.title, outer=T, line=-1 ) 
   title(sub=paste("Mean resid = ", round(mean(zr, na.rm=T ),2), "   SD(resid) = ", 
                   round(sd(as.vector(zr), na.rm=T ),2), sep=""), col.sub='blue', cex.sub=0.8)
+  
+  # add bias lines if response entered and bias present
+  if (addbiaslines == TRUE){
+    for (ibias in 1:length(bias_df[,1])){
+      if (bias_df$Source[ibias] == "Year"){
+        abline(h = bias_df$SourceValue[ibias], col="green", lwd=2)
+      }
+      if (bias_df$Source[ibias] == "Age"){
+        abline(v = bias_df$SourceValue[ibias], col="green", lwd=2)
+      }
+      if (bias_df$Source[ibias] == "Cohort"){
+        lines(x=c(1,nages), y=bias_df$SourceValue[ibias] + c(1, nages), col="green", lwd=2)
+      }
+    }
+  }
   return()
 }
 
-plotBAMstyle <- function(df){
+plotBAMstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
   plot(1:10, 1:10, type='n', axes = FALSE, xlab = "", ylab = "")
    text(5,5, "BAM plot under development")
   return()
 }
 
-plotr4ssstyle <- function(df){
+plotr4ssstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
   plot(1:10, 1:10, type='n', axes = FALSE, xlab = "", ylab = "")
    text(5,5, "r4ss plot under development")
   return()
 }
 
-plotSAMstyle <- function(df){
+plotSAMstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
   # not quite the same as SAM due to location of legend bar, but close
   x <- df$Year
   y <- df$Age
@@ -117,6 +132,22 @@ plotSAMstyle <- function(df){
     colb <- ifelse(zscale<0, rgb(1, 0, 0, alpha=.5), rgb(0, 0, 1, alpha=.5))
     points(xx,yy,cex=sqrt(abs(zscale))/max(sqrt(abs(zscale)), na.rm=TRUE)*5, pch=19, col=colb)
   }
+
+  # add bias lines if response entered and bias present
+  if (addbiaslines == TRUE){
+    for (ibias in 1:length(bias_df[,1])){
+      if (bias_df$Source[ibias] == "Year"){
+        abline(v = bias_df$SourceValue[ibias], col="green", lwd=2)
+      }
+      if (bias_df$Source[ibias] == "Age"){
+        abline(h = bias_df$SourceValue[ibias], col="green", lwd=2)
+      }
+      if (bias_df$Source[ibias] == "Cohort"){
+        lines(x=bias_df$SourceValue[ibias] + c(1, max(y)), y=c(1, max(y)), col="green", lwd=2)
+      }
+    }
+  }
+  
   add_legend(z)
   return()
 }
@@ -146,7 +177,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         h3("Settings"),
         p("This is where you determine how the test plots will appear and how challenging it will be to detect the biases. The sliders allow you to change the number of years and ages to mimic situations that you encounter in your assessment. There are only two plot types available currently, ASAP and SAM, because the r4ss and BAM plots require the observed and expected values, not just a matrix of residuals. This will be developed in the future. Feedback is welcome on the difficulty settings. Is Easy too easy, or Hard too hard? The plot on this page shows an example of the settings selected with no bias."),
         h3("Random or Not?"),
-        p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see the plot disappear and be replace by a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). A smaller version of the test plot is shown at the bottom of the page (you may have to scroll down to see it) so you can see where biases were or were not present. Just click the Create Test Case again to get your next test plot."),
+        p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). The test plot is shown at the bottom of the page (you may have to scroll down to see it) so you can see where biases were in green lines. Just click the Create Test Case again to get your next test plot."),
         p(" Please note there are some known issues with this page due to my relative newness with Shiny. Specifically, if you click either button multiple times, it will advance the counter and create problems for the percent correct calculations. If you are feeling bad about how you are doing, you can simply click the submit my response button numerous times on a correct reponse to inflate your percent correct. <grin>"),
         h3("Results so far"),
         p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The first table compiles your correct and incorrect responses according to the level of difficulty and whether the test plot was random or biased. The next table contains the response-specific results and can be sorted by any of the columns by clicking on the up or down arrow to the right of the column header."),
@@ -237,7 +268,6 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         actionButton("createCase",
                      label = "Create Test Case"),
         br(),
-        br(),
         radioButtons("Response",
                     label = "Your response",
                     choices = list("Random", "Biased"),
@@ -247,12 +277,11 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
                      label = "Submit my response")
       ),
       mainPanel(
-        textOutput("correctText"),
+        h3(textOutput("correctText")),
         br(),
         br(),
         tableOutput("biasesTable"),
-        plotOutput("testingPlot", height = "600px"),
-        plotOutput("testingPlotsmall", height = "400px")
+        plotOutput("testingPlot", height = "600px")
       )
     )
   ),
@@ -619,7 +648,8 @@ server <- function(input, output) {
   })
   
   output$testingPlot <- renderPlot({
-    if (clickvalues$create == 0) return(NULL)
+    addbiaslines <- FALSE
+    if (clickvalues$create == 0 & !is.null(caseList()$bias_df)) addbiaslines <- TRUE
 
     pr_df <- caseList()$resid_df
 
@@ -627,47 +657,22 @@ server <- function(input, output) {
       return(NULL)
     }
     if (input$plottype == "ASAP"){
-      plotASAPstyle(pr_df)
+      plotASAPstyle(pr_df, addbiaslines, caseList()$bias_df)
     }
     
     if (input$plottype == "r4ss"){
-      plotr4ssstyle(pr_df)
+      plotr4ssstyle(pr_df, addbiaslines, caseList()$bias_df)
     }
     
     if (input$plottype == "BAM"){
-      plotBAMstyle(pr_df)
+      plotBAMstyle(pr_df, addbiaslines, caseList()$bias_df)
     }
     
     if (input$plottype == "SAM"){
-      plotSAMstyle(pr_df)
+      plotSAMstyle(pr_df, addbiaslines, caseList()$bias_df)
     }
   })
    
-  output$testingPlotsmall <- renderPlot({
-    if (clickvalues$respond == 0) return(NULL)
-    
-    pr_df <- caseList()$resid_df
-    
-    if (is.null(pr_df)){
-      return(NULL)
-    }
-    if (input$plottype == "ASAP"){
-      plotASAPstyle(pr_df)
-    }
-    
-    if (input$plottype == "r4ss"){
-      plotr4ssstyle(pr_df)
-    }
-    
-    if (input$plottype == "BAM"){
-      plotBAMstyle(pr_df)
-    }
-    
-    if (input$plottype == "SAM"){
-      plotSAMstyle(pr_df)
-    }
-  })
-
   output$correctText <- renderText({
     if (clickvalues$respond == 0) return(NULL)
     
