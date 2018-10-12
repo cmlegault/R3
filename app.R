@@ -155,7 +155,7 @@ plotSAMstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
 #-------------------------------------------------------------------------
 # Define UI using tabs for different topics
 ui <- navbarPage(strong("Recognizing Random Residuals"), 
-                 header = img(src="noaanefsclogo.png"), 
+                 header = img(src="noaanefsclogo.PNG"), 
                  windowTitle = "R3",
                  
   tabPanel("Introduction",
