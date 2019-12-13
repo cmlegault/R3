@@ -32,7 +32,7 @@ bias <- data.frame(Type = c(rep("Additive", 3), rep("Multiplicative", 3)),
 #-------------------------------------------------------------------------
 # plotting (and other) functions go here
 # df is a data frame with at least columns Year, Age, plotresid, can have other columns
-plotASAPstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
+plotASAPstyle <- function(df, orig.bubble.colors=FALSE, addbiaslines = FALSE, bias_df = NULL){
   years <- sort(unique(df$Year))
   nyrs <- length(years)
   ages <- sort(unique(df$Age))
@@ -43,8 +43,13 @@ plotASAPstyle <- function(df, addbiaslines = FALSE, bias_df = NULL){
   }
   scale.catch.bubble.resid <- 2 # ASAP default
   my.title <- "ASAP Age Comp Residuals"
-  pos.resid.col <- "#ffffffaa"
-  neg.resid.col <- "#ff1111aa"
+  if (orig.bubble.colors == TRUE) {
+    pos.resid.col <- "#ffffffaa"
+    neg.resid.col <- "#ff1111aa"
+  } else {
+    pos.resid.col <- rgb(0, 0, 1, alpha = 0.5)
+    neg.resid.col <- rgb(1, 0, 0, alpha = 0.5)
+  }
   zr <- z1
   resid.col <- ifelse(zr > 0.0, pos.resid.col, neg.resid.col)
   plot(ages, rev(ages),  xlim = c(1, nages), ylim = c(years[nyrs],(years[1]-2)), 
@@ -180,7 +185,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). The test plot is shown at the bottom of the page (you may have to scroll down to see it) so you can see where biases were in green lines. Just click the Create Test Case again to get your next test plot."),
         p(" Please note there are some known issues with this page due to my relative newness with Shiny. Specifically, if you click either button multiple times, it will advance the counter and create problems for the percent correct calculations. If you are feeling bad about how you are doing, you can simply click the submit my response button numerous times on a correct reponse to inflate your percent correct. <grin>"),
         h3("Results so far"),
-        p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The first table compiles your correct and incorrect responses according to the level of difficulty and whether the test plot was random or biased. The next table contains the response-specific results and can be sorted by any of the columns by clicking on the up or down arrow to the right of the column header."),
+        p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The first table compiles your correct and incorrect responses according to the level of difficulty and whether the test plot was random or biased. The next table contains the response-specific results."),
         h3("Technical Details"),
         p("The additive biases just add or subtract the Value in the table below to the random residuals in that year, age, or cohort. The multiplicative biases multiply the residuals by the Value when the direction is positive and multiply the residuals by (1/Value) when the direction is negative (meaning the size of the residuals decrease)."),
         tableOutput("biasTable"),
@@ -198,8 +203,8 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
       sidebarPanel(
         selectInput("demoPlotType",
                     label = "Plot Type",
-                    choices = list("ASAP", "r4ss", "BAM", "SAM"),
-                    selected = "ASAP"),
+                    choices = list("ASAPorig", "ASAP", "r4ss", "BAM", "SAM"),
+                    selected = "ASAPorig"),
         
         selectInput("demoBiasAmount",
                     label = "How much bias?",
@@ -248,7 +253,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         
         selectInput("plottype",
                     label = "Plot Type)",
-                    choices = list("ASAP", "SAM"),
+                    choices = list("ASAPorig", "ASAP", "SAM"),
                     selected = "ASAP"),
         
         selectInput("difficulty",
@@ -290,7 +295,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
   tabPanel("Results so far",
            plotOutput("resultsOverTimePlot"),
            tableOutput("crossTable"),
-           dataTableOutput("resultsTable")
+           tableOutput("resultsTable")
   )
   
 ) # close navbarPage parens
@@ -614,6 +619,9 @@ server <- function(input, output) {
   })
 
   output$demoBiasPlot <- renderPlot({
+    if (input$demoPlotType == "ASAPorig"){
+      plotASAPstyle(demoList()$resid_df, orig.bubble.colors = TRUE)
+    }
     if (input$demoPlotType == "ASAP"){
       plotASAPstyle(demoList()$resid_df)
     }
@@ -634,6 +642,9 @@ server <- function(input, output) {
              Age <= input$nages) %>%
       mutate(plotresid = randresid)
     
+    if (input$plottype == "ASAPorig"){
+      plotASAPstyle(demo_df, orig.bubble.colors = TRUE)
+    }
     if (input$plottype == "ASAP"){
       plotASAPstyle(demo_df)
     }
@@ -649,28 +660,33 @@ server <- function(input, output) {
   })
   
   output$testingPlot <- renderPlot({
-    addbiaslines <- FALSE
-    if (clickvalues$create == 0 & !is.null(caseList()$bias_df)) addbiaslines <- TRUE
+    plotbiaslines <- FALSE
+    if (clickvalues$create == 0 & !is.null(caseList()$bias_df)) plotbiaslines <- TRUE
 
     pr_df <- caseList()$resid_df
+    bi_df <- caseList()$bias_df
 
     if (is.null(pr_df)){
       return(NULL)
     }
+    if (input$plottype == "ASAPorig"){
+      plotASAPstyle(pr_df, orig.bubble.colors=TRUE, plotbiaslines, bi_df)
+    }
+    
     if (input$plottype == "ASAP"){
-      plotASAPstyle(pr_df, addbiaslines, caseList()$bias_df)
+      plotASAPstyle(pr_df, orig.bubble.colors=FALSE, plotbiaslines, bi_df)
     }
     
     if (input$plottype == "r4ss"){
-      plotr4ssstyle(pr_df, addbiaslines, caseList()$bias_df)
+      plotr4ssstyle(pr_df, plotbiaslines, bi_df)
     }
     
     if (input$plottype == "BAM"){
-      plotBAMstyle(pr_df, addbiaslines, caseList()$bias_df)
+      plotBAMstyle(pr_df, plotbiaslines, bi_df)
     }
     
     if (input$plottype == "SAM"){
-      plotSAMstyle(pr_df, addbiaslines, caseList()$bias_df)
+      plotSAMstyle(pr_df, plotbiaslines, bi_df)
     }
   })
    
@@ -723,16 +739,17 @@ server <- function(input, output) {
     if (is.null(values$results_df)){
       return(NULL)
     }
-    values$results_df %>%
+    mycrosstable <- values$results_df %>%
       group_by(Difficulty, Actual, Response) %>%
       summarize(n = n()) %>%
       spread(key = Response, value = n, fill = 0) %>%
       mutate(PercentCorrect = ifelse(Actual == "Biased", 
                                      100 * Biased / (Biased + Random), 
                                      100 * Random / (Biased + Random))) 
+    mycrosstable
   })
   
-  output$resultsTable <- renderDataTable(values$results_df)
+  output$resultsTable <- renderTable(values$results_df)
    
 }
 
