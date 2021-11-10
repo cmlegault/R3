@@ -1,23 +1,20 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+# do not install packages due to RStudio Connect
+# packages = c("shiny",       # interactive components
+#              "dplyr",       # data wrangling
+#              "tidyr",       # data wrangling
+#              "ggplot2")     # nice plotting
+# 
+# package.check <- lapply(packages, FUN = function(x) {
+#   if (!require(x, character.only = TRUE)) {
+#     install.packages(x, dependencies = TRUE)
+#     library(x, character.only = TRUE)
+#   }
+# })
 
-packages = c("shiny",       # interactive components
-             "dplyr",       # data wrangling
-             "tidyr",       # data wrangling
-             "ggplot2")     # nice plotting
-
-package.check <- lapply(packages, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE)
-    library(x, character.only = TRUE)
-  }
-})
+library("shiny")
+library("dplyr")
+library("tidyr")
+library("ggplot2")
 
 # create set of random resids for demo plots using max combos of Year and Age
 demo_resids_df <- data.frame(Year = rep(seq(1969, 2018), each = 20),
