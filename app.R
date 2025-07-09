@@ -179,7 +179,7 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
         h3("Settings"),
         p("This is where you determine how the test plots will appear and how challenging it will be to detect the biases. The sliders allow you to change the number of years and ages to mimic situations that you encounter in your assessment. There are only two plot types available currently, ASAP and SAM, because the r4ss and BAM plots require the observed and expected values, not just a matrix of residuals. This will be developed in the future. Feedback is welcome on the difficulty settings. Is Easy too easy, or Hard too hard? The plot on this page shows an example of the settings selected with no bias."),
         h3("Random or Not?"),
-        p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). The test plot is shown at the bottom of the page (you may have to scroll down to see it) so you can see where biases were in green lines. Just click the Create Test Case again to get your next test plot."),
+        p("This is the fun part! Click the Create Test Case button to generate a test plot. Select either Random or Biased and click the Submit my response button. You will see a message of either 'Correct!' or Sorry, wrong response'. If the residuals were biased, a small table will also appear showing all the biases that were present in the residuals (did you see them all?). The test plot is shown at the bottom of the page (you may have to scroll down to see it) so you can see where biases were in green lines. Just click the Create Test Case again to get your next test plot. A new feature allows you to download the data used to make the figure in case you want to try other automated methods on the data."),
         p(" Please note there are some known issues with this page due to my relative newness with Shiny. Specifically, if you click either button multiple times, it will advance the counter and create problems for the percent correct calculations. If you are feeling bad about how you are doing, you can simply click the submit my response button numerous times on a correct reponse to inflate your percent correct. <grin>"),
         h3("Results so far"),
         p("This is where you can see your progress. If you've responded fewer than five times, the top plot will just show a message that you haven't done enough yet. Once you've completed at least five test plot responses, the plot shows your percent correct as the solid line with the red area indicating the 95% confidence interval associated with random guessing. So if you're in the red area, you're only doing as well as flipping a coin! If you are below the red area, then you should spend some more time with the Demo tab to see how residuals respond to biases. If you are above the red area, then you are better than random and can say that yes, you can recognize random residuals! The red area appears jagged at small number of responses due to the confidence interval resulting in whole numbers. As the number of responses gets large, the red area appears much smoother. The first table compiles your correct and incorrect responses according to the level of difficulty and whether the test plot was random or biased. The next table contains the response-specific results."),
@@ -277,7 +277,8 @@ ui <- navbarPage(strong("Recognizing Random Residuals"),
                     selected = "Random",
                     inline = TRUE),
         actionButton("submit",
-                     label = "Submit my response")
+                     label = "Submit my response"),
+        downloadButton("downloadData", "Download the data")
       ),
       mainPanel(
         h3(textOutput("correctText")),
@@ -598,6 +599,15 @@ server <- function(input, output) {
     response.list$Correct <- ifelse(caseList()$Actual == input$Response, 1, 0)
     response.list
   })
+  
+  output$downloadData <- downloadHandler(
+    filename = function(){
+      paste0("data_for_case_", icount$icase, ".csv")
+    },
+    content = function(file){
+      write.csv(select(caseList()$resid_df, Age, Year, Cohort, plotresid), file, row.names = FALSE)
+    }
+  )
   
   observeEvent(input$submit,{
     # if (is.null(input$Response)){
